@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_ts
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: unitydb
+      MYSQL_USER: unity
+      MYSQL_PASSWORD: unity_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+
+  backend:
+    build: ./backend
+    container_name: unity_backend_ts
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: unitydb
+      DB_USER: unity
+      DB_PASS: unity_pass
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  db_data:
