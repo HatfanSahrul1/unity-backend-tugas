@@ -1,4 +1,4 @@
-create table if not exist db_user (
+create table if not exists db_user (
     id int auto_increment primary key,
     username varchar(50) not null unique,
     password_hash varchar(255) not null,
