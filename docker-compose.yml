@@ -27,7 +27,7 @@ services:
       DB_USER: unity
       DB_PASS: unity_pass
     ports:
-      - "5000:5000"
+      - "0.0.0.0:5000:5000"
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
