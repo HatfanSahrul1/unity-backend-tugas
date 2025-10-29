@@ -1,5 +1,6 @@
 import express from 'express';
 import mysql from 'mysql2/promise';
+import bcrypt from 'bcrypt';
 
 const app = express();
 app.use(express.json());
@@ -37,19 +38,139 @@ initDB().catch(err => {
 app.get('/api/ping', (req, res) => res.json({ ok: true, time: new Date() }));
 
 app.get('/api/scores', async (req, res) => {
-  const [rows] = await pool.query('SELECT * FROM scores ORDER BY score DESC LIMIT 20');
+  const [rows] = await pool.query(`
+    SELECT 
+    u.username, 
+    a.score 
+    FROM db_user u 
+    JOIN db_attributes a ON a.player_id = u.id 
+    ORDER BY a.score DESC LIMIT 5`);
+
   res.json(rows);
 });
 
-app.post('/api/scores', async (req, res) => {
-  const { player, score } = req.body;
-  if (!player || !score) return res.status(400).json({ error: 'Missing data' });
+app.get('/api/user_data/:id', async (req, res) => {
+  const userId = Number(req.params.id);
 
-  const [result] = await pool.query(
-    'INSERT INTO scores (player, score) VALUES (?, ?)',
-    [player, score]
-  );
-  res.json({ success: true, id: (result as any).insertId });
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID' });
+  }
+
+  try {
+    
+    const [rows] = await pool.query(
+      `SELECT 
+        u.username AS username, 
+        a.score AS score, 
+        a.coin AS coin, 
+        a.green_skin AS greenSkin, 
+        a.red_skin AS redSkin, 
+        a.blue_skin AS blueSkin 
+      FROM db_user u 
+      JOIN db_attributes a ON a.player_id = u.id 
+      WHERE u.id = ?`,
+      [userId]
+    );
+
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(rows[0]); 
+
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, username, password_hash FROM db_user WHERE username = ?',
+      [username]
+    );
+
+    const users = rows as any[];
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const user = users[0];
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username
+      }
+    });
+
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/create_user', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Missing username or password' });
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const [result] = await pool.query(`
+      INSERT INTO db_user (username, password_hash) VALUES (?, ?)`
+      , [username, hash]);
+
+    if (!result || !(result as any).insertId) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+
+    res.json({ success: true, id: (result as any).insertId });
+
+  } catch (err) {
+    console.error('Error creating user:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/create_attributes/:player_id', async (req, res) => {
+  try {
+    const playerId = Number(req.params.player_id);
+    const { score, coin, greenSkin, redSkin, blueSkin } = req.body;
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' });
+    }
+
+    const [result] = await pool.query(`
+      INSERT INTO db_attributes 
+      (player_id, score, coin, green_skin, red_skin, blue_skin) 
+      VALUES (?, ?, ?, ?, ?, ?)`
+      , [playerId, score, coin, greenSkin, redSkin, blueSkin]);
+
+    if (!result || !(result as any).insertId) {
+      return res.status(500).json({ error: 'Failed to create attributes' });
+    }
+
+    res.json({ success: true, id: (result as any).insertId });
+
+  } catch (err) {
+    console.error('Error creating attributes:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.listen(5000, () => console.log("Backend running on port 5000"));
