@@ -44,7 +44,7 @@ app.get('/api/scores', async (req, res) => {
     a.score 
     FROM db_user u 
     JOIN db_attributes a ON a.player_id = u.id 
-    ORDER BY a.score DESC LIMIT 5`);
+    ORDER BY a.score DESC LIMIT 5`) as mysql.RowDataPacket[][];
 
   res.json(rows);
 });
@@ -70,9 +70,9 @@ app.get('/api/user_data/:id', async (req, res) => {
       JOIN db_attributes a ON a.player_id = u.id 
       WHERE u.id = ?`,
       [userId]
-    );
+    ) as mysql.RowDataPacket[][];
 
-    if ((rows as any[]).length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -95,9 +95,9 @@ app.post('/api/login', async (req, res) => {
     const [rows] = await pool.query(
       'SELECT id, username, password_hash FROM db_user WHERE username = ?',
       [username]
-    );
+    ) as mysql.RowDataPacket[][];
 
-    const users = rows as any[];
+    const users = rows;
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
