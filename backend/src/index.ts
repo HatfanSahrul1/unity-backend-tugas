@@ -68,7 +68,8 @@ app.get('/api/user_data/:id', async (req, res) => {
         a.blue_skin AS blueSkin 
       FROM db_user u 
       JOIN db_attributes a ON a.player_id = u.id 
-      WHERE u.id = ?`,
+      WHERE u.id = ?
+      ORDER BY a.id ASC LIMIT 1`,
       [userId]
     ) as mysql.RowDataPacket[][];
 
@@ -173,4 +174,57 @@ app.post('/api/create_attributes/:player_id', async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log("Backend running on port 5000"));
+app.post('/api/update_attributes/:player_id', async (req, res) => {
+  try {
+    const playerId = Number(req.params.player_id);
+    const { score, coin, greenSkin, redSkin, blueSkin } = req.body;
+
+    if (isNaN(playerId)) {
+      return res.status(400).json({ error: 'Invalid player ID' });
+    }
+
+    // Validasi input data
+    if (score === undefined || coin === undefined || 
+        greenSkin === undefined || redSkin === undefined || blueSkin === undefined) {
+      return res.status(400).json({ error: 'Missing required attributes' });
+    }
+
+    // Validasi tipe data
+    if (isNaN(score) || isNaN(coin) || 
+        ![0, 1].includes(greenSkin) || ![0, 1].includes(redSkin) || ![0, 1].includes(blueSkin)) {
+      return res.status(400).json({ error: 'Invalid attribute values' });
+    }
+
+    // Periksa apakah player exists
+    const [checkResult] = await pool.query(
+      'SELECT id FROM db_user WHERE id = ?',
+      [playerId]
+    ) as mysql.RowDataPacket[][];
+
+    if (checkResult.length === 0) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    const [result] = await pool.query(`
+      UPDATE db_attributes 
+      SET score = ?, coin = ?, green_skin = ?, red_skin = ?, blue_skin = ? 
+      WHERE player_id = ?`
+      , [score, coin, greenSkin, redSkin, blueSkin, playerId]);
+
+    if (!result || !(result as any).affectedRows) {
+      return res.status(404).json({ error: 'No attributes found for this player. Create attributes first.' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Attributes updated successfully',
+      playerId: playerId 
+    });
+
+  } catch (err) {
+    console.error('Error updating attributes:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.listen(5000, '0.0.0.0', () => console.log("Backend running on port 5000"));
