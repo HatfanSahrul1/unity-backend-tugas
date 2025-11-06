@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+  backend:
+    source: backend
+    healthcheckPath: /api/ping
+    healthcheckTimeout: 10s
+    restartPolicyType: ON_FAILURE
+    restartPolicyMaxRetries: 3
+    variables:
+      NODE_ENV: production
+      DB_HOST: ${{ MYSQLHOST }}
+      DB_PORT: ${{ MYSQLPORT }}
+      DB_NAME: ${{ MYSQLDATABASE }}
+      DB_USER: ${{ MYSQLUSER }}
+      DB_PASS: ${{ MYSQLPASSWORD }}
+
+  database:
+    image: mysql:8.0
+    variables:
+      MYSQL_DATABASE: unitydb
+      MYSQL_USER: unity
+      MYSQL_PASSWORD: unity_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+
+volumes:
+  mysql_data:

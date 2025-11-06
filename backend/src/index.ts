@@ -5,13 +5,14 @@ import bcrypt from 'bcrypt';
 const app = express();
 app.use(express.json());
 
-// load from env (docker-compose)
+// load from env (supports docker-compose & Railway)
 const {
-  DB_HOST = 'localhost',
-  DB_PORT = '3306',
-  DB_NAME = 'unitydb',
-  DB_USER = 'unity',
-  DB_PASS = 'unity_pass'
+  DB_HOST = process.env.MYSQLHOST || 'localhost',
+  DB_PORT = process.env.MYSQLPORT || '3306',
+  DB_NAME = process.env.MYSQLDATABASE || 'unitydb', 
+  DB_USER = process.env.MYSQLUSER || 'unity',
+  DB_PASS = process.env.MYSQLPASSWORD || 'unity_pass',
+  PORT = process.env.PORT || '5000'
 } = process.env;
 
 // buat pool koneksi
@@ -227,4 +228,4 @@ app.post('/api/update_attributes/:player_id', async (req, res) => {
   }
 });
 
-app.listen(5000, '0.0.0.0', () => console.log("Backend running on port 5000"));
+app.listen(Number(PORT), '0.0.0.0', () => console.log(`Backend running on port ${PORT}`));

@@ -1,0 +1,18 @@
+{
+  "name": "unity-backend",
+  "version": "1.0.0",
+  "description": "Unity game backend with authentication and leaderboard",
+  "main": "backend/dist/index.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm run build",
+    "dev": "cd backend && npm run dev",
+    "install-backend": "cd backend && npm install"
+  },
+  "keywords": ["unity", "backend", "game", "express", "mysql"],
+  "author": "HatfanSahrul1",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -78,5 +78,21 @@ Game scene test keys:
 - Disable "AP Isolation" in hotspot settings
 - Use computer's IP address (not localhost)
 
+## Railway Deployment
+
+1. **Fork/Push** repository ke GitHub
+2. **Connect GitHub** ke Railway (railway.app)
+3. **Add MySQL Database:**
+   - New Project → Add MySQL
+   - Catat environment variables
+4. **Deploy Backend:**
+   - New Service → GitHub repo
+   - Railway auto-detect `start.sh` 
+   - Connect MySQL database
+5. **Update Unity:**
+   - Ganti baseUrl: `https://your-app.railway.app/api`
+
+Railway auto-configure environment variables dari MySQL service.
+
 ## License
 MIT - Free to use!
